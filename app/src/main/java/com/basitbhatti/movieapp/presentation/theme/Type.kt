@@ -1,4 +1,4 @@
-package com.basitbhatti.movieapp.ui.theme
+package com.basitbhatti.movieapp.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

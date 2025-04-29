@@ -1,21 +1,38 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp") version "2.1.0-1.0.29"
 }
 
 android {
     namespace = "com.basitbhatti.movieapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.basitbhatti.movieapp"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
+        android.buildFeatures.buildConfig = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val properties = Properties().apply {
+            load(project.rootProject.file("local.properties").inputStream())
+        }
+        val apiKey = properties.getProperty("API_KEY") ?: "\"\""
+        buildConfigField("String", "API_KEY", apiKey)
+
+        val bearerToken = properties.getProperty("BEARER_TOKEN") ?: "\"\""
+        buildConfigField("String", "BEARER_TOKEN", bearerToken)
+
+//        buildConfigField("String", "BEARER_TOKEN", "\"${properties.getProperty("BEARER_TOKEN")}\"")
+
     }
 
     buildTypes {
@@ -41,6 +58,31 @@ android {
 
 dependencies {
 
+    // Room Database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    annotationProcessor(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.room.compiler)
+
+
+
+    // RetroFit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    // ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    // Dagger-Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    // EncryptedSharedPreferences
+    implementation(libs.androidx.security.crypto)
+
+
+    // Android-Libraries
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

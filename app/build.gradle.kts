@@ -7,6 +7,7 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp") version "2.1.0-1.0.29"
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -61,10 +62,16 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.room.compiler)
 
-
+    //Extended-Icons
+    implementation(libs.androidx.material.icons.extended)
+    implementation("androidx.navigation:navigation-compose:2.8.9")
 
     // RetroFit
     implementation(libs.retrofit)
@@ -99,5 +106,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("androidx.compose.material:material-icons-extended:1.7.5")
+
+
 }

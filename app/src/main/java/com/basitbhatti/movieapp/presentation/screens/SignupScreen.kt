@@ -2,6 +2,7 @@ package com.basitbhatti.movieapp.presentation.screens
 
 import android.app.ProgressDialog
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,7 +26,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -49,19 +49,34 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.basitbhatti.movieapp.R
 import com.basitbhatti.movieapp.navigation.Screen
 import com.basitbhatti.movieapp.presentation.theme.LightGrayColor
 import com.basitbhatti.movieapp.presentation.theme.fontFamily
+import com.basitbhatti.movieapp.presentation.viewmodel.AuthenticationViewModel
+import com.basitbhatti.movieapp.utils.SESSION_ID
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.pdftoexcel.bankstatementconverter.utils.PrefManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController) {
+fun SignupScreen(
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
+    viewModel: AuthenticationViewModel = hiltViewModel()
+) {
 
     val context = LocalContext.current
+
+    var name by remember {
+        mutableStateOf("")
+    }
 
     var email by remember {
         mutableStateOf("")
@@ -70,6 +85,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
     var password by remember {
         mutableStateOf("")
     }
+
     var passwordVisible by remember {
         mutableStateOf(false)
     }
@@ -84,33 +100,56 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color.White),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
-            text = "Sign In",
+            text = "Sign Up",
             fontSize = 28.sp,
-            color = MaterialTheme.colorScheme.onBackground,
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
         )
 
         Text(
-            text = "Sign into your account",
+            text = "Create your account",
             fontFamily = fontFamily,
             fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = Color.Gray,
             modifier = Modifier.padding(top = 5.dp),
         )
+
+        Text(
+            text = "Name",
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 50.dp),
+            textAlign = TextAlign.Start,
+        )
+
+        OutlinedTextField(
+            value = name,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            onValueChange = { name = it },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp, start = 20.dp, end = 20.dp),
+            placeholder = {
+                Text("John Doe")
+            },
+            shape = RoundedCornerShape(12.dp),
+            colors = fieldColors
+        )
+
 
 
         Text(
             text = "Email",
             modifier = modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 50.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 15.dp),
             textAlign = TextAlign.Start,
         )
 
@@ -133,7 +172,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
             text = "Password",
             modifier = modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 25.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 15.dp),
             textAlign = TextAlign.Start,
         )
 
@@ -165,25 +204,17 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
             colors = fieldColors
         )
 
-        Text(
-            text = "Forgot Password?",
-            color = Color.Blue,
-            textDecoration = TextDecoration.Underline,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 15.dp),
-            textAlign = TextAlign.End,
-        )
-
         Button(
             onClick = {
 
-                if (email.isEmpty()) {
+                if (name.isEmpty()) {
+                    Toast.makeText(context, "Enter name", Toast.LENGTH_SHORT).show()
+                } else if (email.isEmpty()) {
                     Toast.makeText(context, "Enter email address", Toast.LENGTH_SHORT).show()
                 } else if (password.isEmpty()) {
                     Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
                 } else {
-                    signIn(context, navController, email, password)
+                    signUp(context, viewModel, navController, name, email, password)
                 }
 
             },
@@ -201,9 +232,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
         }
 
         Text(
-            text = "Or",
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal
+            text = "Or", fontFamily = fontFamily, fontWeight = FontWeight.Normal
         )
 
         Card(
@@ -243,20 +272,20 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Don't have an account?",
+                text = "Already have an account?",
                 fontFamily = fontFamily,
                 fontWeight = FontWeight.Medium
             )
 
             Text(
-                text = "Sign up",
+                text = "Sign in",
                 color = Color.Blue,
                 textDecoration = TextDecoration.Underline,
                 modifier = modifier
                     .padding(start = 5.dp)
                     .clickable {
-                        navController.navigate(Screen.SignupScreen.route){
-                            popUpTo(Screen.LoginScreen.route){
+                        navController.navigate(Screen.LoginScreen.route) {
+                            popUpTo(Screen.SignupScreen.route) {
                                 inclusive = true
                             }
                         }
@@ -265,42 +294,64 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavHostController)
             )
         }
 
-
     }
 
 }
 
-fun signIn(context: Context, controller: NavHostController, email: String, password: String) {
+fun signUp(
+    context: Context,
+    viewmodel: AuthenticationViewModel,
+    controller: NavHostController,
+    name: String,
+    email: String,
+    password: String
+) {
+
     val auth = Firebase.auth
+    val pref = PrefManager(context)
 
-    val progressDialog = ProgressDialog(context)
-    progressDialog.setCancelable(false)
-    progressDialog.setMessage("Logging in...")
-    progressDialog.show()
+    val dialog = ProgressDialog(context)
+    dialog.setCancelable(false)
+    dialog.setMessage("Creating your account...")
+    dialog.show()
 
-    auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
-        progressDialog.dismiss()
+    auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener {
+        viewmodel.getRequestToken()
 
-        controller.navigate(Screen.HomeScreen.route){
-            popUpTo(Screen.SignupScreen.route){
-                inclusive = true
+        dialog.setMessage("Setting up the environment...")
+
+        CoroutineScope(Dispatchers.IO).launch {
+
+            viewmodel.requestToken.collect { token ->
+
+                Log.d("TAGTOKEN", "signUp: $token")
+
+                if (token != null) {
+                    viewmodel.getSession()
+                    viewmodel.session.collect { session ->
+                        dialog.setMessage("Finalizing...")
+                        pref.saveString(SESSION_ID, session?.session_id!!)
+
+
+
+                    }
+
+
+                }
+
             }
-            launchSingleTop = true
+
         }
 
     }.addOnFailureListener {
-        progressDialog.dismiss()
-        if (it.localizedMessage.contains("The supplied auth credential is incorrect")){
-            Toast.makeText(context, "Invalid credentials.", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, it.localizedMessage, Toast.LENGTH_SHORT).show()
-        }
+        dialog.dismiss()
+        Toast.makeText(context, it.localizedMessage, Toast.LENGTH_SHORT).show()
     }
-}
 
+}
 
 @Preview
 @Composable
 private fun Prev() {
-    LoginScreen(navController = rememberNavController())
+    SignupScreen(navController = rememberNavController())
 }

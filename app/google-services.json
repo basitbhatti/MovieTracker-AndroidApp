@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "707482933012",
+    "project_id": "movietracker-a2b7f",
+    "storage_bucket": "movietracker-a2b7f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707482933012:android:ac6e8142c273c6b9641401",
+        "android_client_info": {
+          "package_name": "com.basitbhatti.movieapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChQnD0JrPiG-ZzcRe0_IlJskk5Ox5opAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
